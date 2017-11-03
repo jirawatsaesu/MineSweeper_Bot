@@ -1,68 +1,185 @@
-#include <MsgBoxConstants.au3>
+#include <Array.au3>
+
 WinWaitActive("Microsoft Minesweeper")
 WinSetState("Microsoft Minesweeper", "", @SW_MAXIMIZE)
 WinGetHandle("Microsoft Minesweeper")
 
 HotKeySet("{ESC}", "Terminate")
 
-Global $color[36]
-;MouseMove(469, 166, 0)
-;MouseClick("left")
-For $i = 0 to 3
-   For $j = 0 to 8
-	  MouseMove(474 + $j * 52.7, 161 + $i * 52.7, 0.5)
-	  $color[$i*9 + $j] = PixelGetColor(474 + $j * 52.7, 161 + $i * 52.7)
-	  Sleep(100)
+$x_middle = 542
+$y_middle = 187
+MouseClick("", 800, 445, 1, 0.1)
+Sleep(0.5)
 
-	  #cs
-	  If $color = 0xFFFFFF Then
-		 MouseClick("right")
-	  Else
-		 MouseClick("Right")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; all initial $atable is "B"
+Global $atable[9][9]
 
-	  EndIf
-	  #ce
+While True
+   Scan_window()
+   For $row = 0 to 8
+	  For $column = 0 to 8
+		 ;MouseMove($x_middle + 64.5 * $column, $y_middle + 64.5 * $row, 0.1)
+		 ;If Hex(PixelGetColor(457, 612), 6) = 000000 Then ExitLoop(3)
+		 If IsInt($atable[$row][$column]) Then
+			check_around($row, $column, $atable[$row][$column])
+		 EndIf
+	  Next
    Next
-Next
+WEnd
 
-MsgBox($MB_SYSTEMMODAL, "", "00: " & HEX($color[0], 2) & "     " & _
-"01: " & HEX($color[1], 2) & "     " & _
-"02: " & HEX($color[2], 2) & "     " & _
-"03: " & HEX($color[3], 2) & "     " & _
-"04: " & HEX($color[4], 2) & "     " & _
-"05: " & HEX($color[5], 2) & "     " & _
-"06: " & HEX($color[6], 2) & "     " & _
-"07: " & HEX($color[7], 2) & "     " & _
-"08: " & HEX($color[8], 2) & @CRLF & _
-"10: " & HEX($color[9], 2) & "     " & _
-"11: " & HEX($color[10], 2) & "     " & _
-"12: " & HEX($color[11], 2) & "     " & _
-"13: " & HEX($color[12], 2) & "     " & _
-"14: " & HEX($color[13], 2) & "     " & _
-"15: " & HEX($color[14], 2) & "     " & _
-"16: " & HEX($color[15], 2) & "     " & _
-"17: " & HEX($color[16], 2) & "     " & _
-"18: " & HEX($color[17], 2) & @CRLF & _
-"20: " & HEX($color[18], 2) & "     " & _
-"21: " & HEX($color[19], 2) & "     " & _
-"22: " & HEX($color[20], 2) & "     " & _
-"23: " & HEX($color[21], 2) & "     " & _
-"24: " & HEX($color[22], 2) & "     " & _
-"25: " & HEX($color[23], 2) & "     " & _
-"26: " & HEX($color[24], 2) & "     " & _
-"27: " & HEX($color[25], 2) & "     " & _
-"28: " & HEX($color[26], 2) & @CRLF & _
-"30: " & HEX($color[27], 2) & "     " & _
-"31: " & HEX($color[28], 2) & "     " & _
-"32: " & HEX($color[29], 2) & "     " & _
-"33: " & HEX($color[30], 2) & "     " & _
-"34: " & HEX($color[31], 2) & "     " & _
-"35: " & HEX($color[32], 2) & "     " & _
-"36: " & HEX($color[33], 2) & "     " & _
-"37: " & HEX($color[34], 2) & "     " & _
-"38: " & HEX($color[35], 2))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; no duplicate scan
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; by create new array that keep row and column
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; when capture, don't care any in an array
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; don't keep "B" in an array
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; End game??
+; Scan window check for color.
+Func Scan_window()
+   For $row = 0 to 8
+	  For $column = 0 to 8
+		 $x_left = 514 + 64.5 * $column
+		 $y_top = 160 + 64.5 * $row
+		 $x_right = 570 + 64.5 * $column
+		 $y_bottom = 215 + 64.5 * $row
+		 $color_1 = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0x19BBDE, 20)
+		 $color_2 = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0x5E7A1B, 16)
+		 $color_3 = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0xBD1D59, 14)
+		 $color_4 = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0x1A57C7, 6)
+		 $color_B = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0x80D7FF, 16)
+		 $color_W = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0xFFFFFF)
+		 $color_F = PixelSearch($x_left, $y_top, $x_right, $y_bottom, 0xC70000)
 
+		 If Not($color_1 = 0) Then
+			$atable[$row][$column] = 1
+		 ElseIf Not($color_2 = 0) Then
+			$atable[$row][$column] = 2
+		 ElseIf Not($color_3 = 0) Then
+			$atable[$row][$column] = 3
+		 ElseIf Not($color_4 = 0) Then
+			$atable[$row][$column] = 4
+		 ElseIf Not($color_B = 0) Then
+			$atable[$row][$column] = "B"
+		 ElseIf Not($color_W = 0) Then
+			$atable[$row][$column] = "W"
+		 ElseIf Not($color_F = 0) Then
+			$atable[$row][$column] = "F"
+		 Else
+			$num = 0
+		 EndIf
+	  Next
+   Next
+EndFunc
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Algorithm the lease chance of row and column of bomb
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Algorithm random click
+; Check around of current row and column.
+Func check_around(ByRef $row, ByRef $column, ByRef $num)
+   Local $table_b[0][2]
+   Local $table_f[0][2]
+
+   ; Check
+   If $atable[$row][$column] = $num Then
+	  If $row - 1 >= 0 and $column - 1 >= 0 Then
+		 If $atable[$row-1][$column-1] = "F" Then
+			Local $aFill[1][2] = [[$row - 1, $column - 1]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row-1][$column-1] = "B" Then
+			Local $aFill[1][2] = [[$row - 1, $column - 1]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $row - 1 >= 0 Then
+		 If $atable[$row-1][$column] = "F" Then
+			Local $aFill[1][2] = [[$row - 1, $column]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row-1][$column] = "B" Then
+			Local $aFill[1][2] = [[$row - 1, $column]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $row - 1 >= 0 and $column + 1 <= 8 Then
+		 If $atable[$row-1][$column+1] = "F" Then
+			Local $aFill[1][2] = [[$row - 1, $column + 1]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row-1][$column+1] = "B" Then
+			Local $aFill[1][2] = [[$row - 1, $column + 1]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $column - 1 >= 0 Then
+		 If $atable[$row][$column-1] = "F" Then
+			Local $aFill[1][2] = [[$row, $column - 1]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row][$column-1] = "B" Then
+			Local $aFill[1][2] = [[$row, $column - 1]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $column + 1 <= 8 Then
+		 If $atable[$row][$column+1] = "F" Then
+			Local $aFill[1][2] = [[$row, $column + 1]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row][$column+1] = "B" Then
+			Local $aFill[1][2] = [[$row, $column + 1]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $row + 1 <= 8 and $column - 1 >= 0 Then
+		 If $atable[$row+1][$column-1] = "F" Then
+			Local $aFill[1][2] = [[$row + 1, $column - 1]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row+1][$column-1] = "B" Then
+			Local $aFill[1][2] = [[$row + 1, $column - 1]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $row + 1 <= 8 Then
+		 If $atable[$row+1][$column] = "F" Then
+			Local $aFill[1][2] = [[$row + 1, $column]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row+1][$column] = "B" Then
+			Local $aFill[1][2] = [[$row + 1, $column]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+
+	  If $row + 1 <= 8 and $column + 1 <= 8 Then
+		 If $atable[$row+1][$column+1] = "F" Then
+			Local $aFill[1][2] = [[$row + 1, $column + 1]]
+			_ArrayAdd($table_f, $aFill)
+		 EndIf
+		 If $atable[$row+1][$column+1] = "B" Then
+			Local $aFill[1][2] = [[$row + 1, $column + 1]]
+			_ArrayAdd($table_b, $aFill)
+		 EndIf
+	  EndIf
+   EndIf
+
+   ; Click
+   If Hex(PixelGetColor(457, 612), 6) = 000000 Then
+	  Send("{Esc}")
+   ElseIf UBound($table_f) = $num Then
+	  MouseClick("middle", $x_middle + 64.5 * $column, $y_middle + 64.5 * $row, 1, 0.1)
+   ElseIf (UBound($table_b) + UBound($table_f)) = $num Then
+	  For $i = 0 to UBound($table_b) - 1
+		 MouseClick("right", $x_middle + 64.5 * $table_b[$i][1], $y_middle + 64.5 * $table_b[$i][0], 1, 0.1)
+		 $atable[$table_b[$i][0]][$table_b[$i][1]] = "F"
+	  Next
+   EndIf
+EndFunc
 
 Func Terminate()
    Exit
