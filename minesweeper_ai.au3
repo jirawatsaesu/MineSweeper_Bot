@@ -31,11 +31,7 @@ Func Initialize()
    Global $x_middle = 542
    Global $y_middle = 187
 
-
-
-
    Global $cnt_e = 0
-
    MouseClick("", 800, 445, 2, 0)
 EndFunc
 
@@ -49,11 +45,15 @@ For $stat = 1 to 100
 	  EndIf
    WEnd
    Sleep(1000)
+   If $stat = 100 Then
+	  ExitLoop(1)
+   EndIf
    MouseClick("", 586, 642, 2, 0)
 Next
 MsgBox($MB_OK, "End_script", "Finished " & $stat - 1 & " Rounds")
 
 Func Control()
+   ;_ArrayDisplay($table, "Before get color table")
    $cnt_click = 0
    Sleep(213)
    For $row = 0 To 8
@@ -63,8 +63,8 @@ Func Control()
 		 EndIf
 	  Next
    Next
-   ;_ArrayDisplay($table, "After get color table")
-   ;_ArrayDisplay($table_dup, "table_dup")
+   ;_ArrayDisplay($table, "Table")
+   ;_ArrayDisplay($table_dup, "Table_duplicate")
    For $row = 0 To 8
 	  For $col = 0 To 8
 		 If IsInt($table[$row][$col]) And Not($table[$row][$col] = $table_dup[$row][$col]) Then
@@ -85,15 +85,20 @@ Func Control()
 			EndIf
 		 Next
 	  Next
+   EndIf
 
 	  ;_ArrayDisplay($wall_b, "wall_b")
 	  ;_ArrayDisplay($wall_num, "wall_num")
 
+   If UBound($wall_b) > 20 Then
+	  Rnd_click()
+   Else
 	  Local $sim = Simulation()
 	  Probability($sim)
-
-	  ;Rnd_click()
    EndIf
+
+   ;Rnd_click()
+   ;Rnd_click2()
 
    _ArrayDelete($wall_b, "0-" & String(UBound($wall_b) - 1))
    _ArrayDelete($wall_num, "0-" & String(UBound($wall_num) - 1))
@@ -222,76 +227,71 @@ EndFunc
 ; nCr
 Func Simulation()
    Local $list_p[0][UBound($wall_b)]
-   Local $cnt_b = UBound($wall_b)
-   If $cnt_b > 20 Then
-	  Rnd_click()
-   Else
-	  Local $seq[0]
-	  For $i = 0 To $cnt_b - 1
-		 _ArrayAdd($seq, $i)
-	  Next
-	  ; seq = [0, 1, 2, 3, 4]
-	  Local $bomb = 10 - $flag
-	  For $k = $bomb To 1 Step -1
-		 Local $nCr = _ArrayCombinations($seq, $k, ",")
-		 ; nCr = [10(UBound()), 01, 02, 03, 04, 12, 13, 14, 23, 24, 34]
-		 Local $cal[UBound($wall_b)]
+   Local $seq[0]
+   For $i = 0 To UBound($wall_b) - 1
+	  _ArrayAdd($seq, $i)
+   Next
+   ; seq = [0, 1, 2, 3, 4]
+   Local $bomb = 10 - $flag
+   For $k = $bomb To 1 Step -1
+	  Local $nCr = _ArrayCombinations($seq, $k, ",")
+	  ; nCr = [10(UBound()), 01, 02, 03, 04, 12, 13, 14, 23, 24, 34]
+	  Local $cal[UBound($wall_b)]
 
-		 ; nCr (bomb choose blue)
-		 For $i = 1 To UBound($nCr) - 1
-			Local $table_s = $table
-			$nCr_split = StringSplit($nCr[$i], ",")
-			; nCr_split = [2(UBound($)), 0, 1]
-			For $j = 1 To UBound($nCr_split) - 1
-			   $table_s[$wall_b[$nCr_split[$j]][0]][$wall_b[$nCr_split[$j]][1]] = "F"
-			Next
-
-			; Bomb check
-			For $j = 0 To UBound($wall_num) - 1
-			   Local $cnt_f = 0
-			   Local $row = $wall_num[$j][0]
-			   Local $col = $wall_num[$j][1]
-
-			   ; Count bomb
-			   For $drow = -1 To 1
-				  For $dcol = -1 To 1
-					 If $drow = 0 And $dcol = 0 Then
-						ContinueLoop(1)
-					 EndIf
-
-					 $new_row = $row + $drow
-					 $new_col = $col + $dcol
-					 If $new_row >= 0 And $new_row <= 8 And $new_col >= 0 And $new_col <= 8 And $table_s[$new_row][$new_col] = "F" Then
-						$cnt_f += 1
-					 EndIf
-				  Next
-			   Next
-
-			   ;MsgBox($MB_OK, "cnt_f", $cnt_f)
-			   ;_ArrayDisplay($table_s, "table_s")
-			   ;MsgBox($MB_OK, "row", $row)
-			   ;MsgBox($MB_OK, "col", $col)
-
-			   ; If bomb equal to num, That's correct
-			   If $cnt_f = $table_s[$row][$col] Then
-				  ExitLoop(0)
-			   Else
-				  ContinueLoop(2)
-			   EndIf
-			Next
-
-			; Add to list probability
-			Local $wall_p[1][UBound($wall_b)]
-			For $j = 0 To UBound($wall_b) - 1
-			   $wall_p[0][$j] = $table_s[$wall_b[$j][0]][$wall_b[$j][1]]
-			Next
-
-			_ArrayAdd($list_p, $wall_p)
+	  ; nCr (bomb choose blue)
+	  For $i = 1 To UBound($nCr) - 1
+		 Local $table_s = $table
+		 $nCr_split = StringSplit($nCr[$i], ",")
+		 ; nCr_split = [2(UBound($)), 0, 1]
+		 For $j = 1 To UBound($nCr_split) - 1
+			$table_s[$wall_b[$nCr_split[$j]][0]][$wall_b[$nCr_split[$j]][1]] = "F"
 		 Next
+
+		 ; Bomb check
+		 For $j = 0 To UBound($wall_num) - 1
+			Local $cnt_f = 0
+			Local $row = $wall_num[$j][0]
+			Local $col = $wall_num[$j][1]
+
+			; Count bomb
+			For $drow = -1 To 1
+			   For $dcol = -1 To 1
+				  If $drow = 0 And $dcol = 0 Then
+					 ContinueLoop(1)
+				  EndIf
+
+				  $new_row = $row + $drow
+				  $new_col = $col + $dcol
+				  If $new_row >= 0 And $new_row <= 8 And $new_col >= 0 And $new_col <= 8 And $table_s[$new_row][$new_col] = "F" Then
+					 $cnt_f += 1
+				  EndIf
+			   Next
+			Next
+
+			;MsgBox($MB_OK, "cnt_f", $cnt_f)
+			;_ArrayDisplay($table_s, "table_s")
+			;MsgBox($MB_OK, "row", $row)
+			;MsgBox($MB_OK, "col", $col)
+
+			; If bomb equal to num, That's correct
+			If $cnt_f = $table_s[$row][$col] Then
+			   ExitLoop(0)
+			Else
+			   ContinueLoop(2)
+			EndIf
+		 Next
+
+		 ; Add to list probability
+		 Local $wall_p[1][UBound($wall_b)]
+		 For $j = 0 To UBound($wall_b) - 1
+			$wall_p[0][$j] = $table_s[$wall_b[$j][0]][$wall_b[$j][1]]
+		 Next
+
+		 _ArrayAdd($list_p, $wall_p)
 	  Next
-	  ;_ArrayDisplay($list_p, "list_p")
-	  Return $list_p
-   EndIf
+   Next
+   _ArrayDisplay($list_p, "list_probablility")
+   Return $list_p
 EndFunc
 
 ; Probability of bombs and not bombs
@@ -316,10 +316,11 @@ Func Probability(ByRef $list_p)
 		 EndIf
 	  Next
    Else
+	  ;_ArrayDisplay($list_f, "list_f Before add")
 	  Local $fill[1][2] = [[$wall_b[_ArrayMaxIndex($prob)][0], $wall_b[_ArrayMaxIndex($prob)][1]]]
 	  _ArrayAdd($list_f, $fill)
    EndIf
-   ;_ArrayDisplay($list_f, "list_f")
+   ;_ArrayDisplay($list_f, "list_f after add")
    ;_ArrayDisplay($list_b, "list_b")
    Left_click($list_b)
    End_game()
@@ -347,6 +348,15 @@ Func Rnd_click()
 	  MouseClick("Left", $x_middle + 64.5 * $wall_b[0][1], $y_middle + 64.5 * $wall_b[0][0], 1, 0)
    EndIf
 EndFunc
+
+Func Rnd_click2()
+   _ArrayShuffle($wall_b)
+   ;_ArrayDisplay($wall_b, "")
+   If Not(UBound($wall_b) = 0) Then
+	  MouseClick("Left", $x_middle + 64.5 * $wall_b[0][1], $y_middle + 64.5 * $wall_b[0][0], 1, 0)
+   EndIf
+EndFunc
+
 
 Func End_game()
    If Hex(PixelGetColor(457, 612), 6) = 000000 Then
